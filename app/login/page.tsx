@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,7 +20,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('admin123')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const { login } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,12 +30,14 @@ export default function LoginPage() {
     try {
       const loggedInUser = await login(email, password)
       if (loggedInUser.role === 'admin') {
-        router.push('/admin')
-      } else if (loggedInUser.role === 'operator') {
-        router.push('/operator/dashboard')
-      } else {
-        router.push('/')
+        window.location.assign('/admin')
+        return
       }
+      if (loggedInUser.role === 'operator') {
+        window.location.assign('/operator/dashboard')
+        return
+      }
+      window.location.assign('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -77,6 +77,8 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   disabled={loading}
+                  autoComplete="email"
+                  data-testid="login-email"
                 />
               </div>
 
@@ -88,10 +90,11 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={loading}
+                  data-testid="login-password"
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading} data-testid="login-submit">
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>

@@ -8,6 +8,7 @@ import {
   SystemSettings,
 } from '../types'
 import { InMemoryQueueStore } from '@/lib/patterns/in-memory-queue-store'
+import { pushQueueSnapshotAfterLocalMutation } from './tab-queue-sync'
 
 // Simulate network delay
 const NETWORK_DELAY = Math.random() * 300 + 100 // 100-400ms
@@ -148,81 +149,8 @@ export const mockServices: Service[] = [
   },
 ]
 
-// Mock Tickets (initial queue)
-export const mockTickets: Ticket[] = [
-  {
-    id: 'ticket-1',
-    ticketNumber: 'A001',
-    branchId: 'branch-1',
-    serviceId: 'service-1',
-    serviceName: 'General Consultation',
-    customerId: 'cust-1',
-    customerName: 'Alice Johnson',
-    customerPhone: '555-1001',
-    status: 'calling',
-    positionInQueue: 1,
-    calledBy: 'op-1',
-    calledAt: new Date(Date.now() - 5 * 60000).toISOString(),
-    createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
-    estimatedWaitTime: 0,
-  },
-  {
-    id: 'ticket-2',
-    ticketNumber: 'A002',
-    branchId: 'branch-1',
-    serviceId: 'service-1',
-    serviceName: 'General Consultation',
-    customerId: 'cust-2',
-    customerName: 'Bob Smith',
-    customerPhone: '555-1002',
-    status: 'waiting',
-    positionInQueue: 2,
-    createdAt: new Date(Date.now() - 10 * 60000).toISOString(),
-    estimatedWaitTime: 15,
-  },
-  {
-    id: 'ticket-3',
-    ticketNumber: 'A003',
-    branchId: 'branch-1',
-    serviceId: 'service-2',
-    serviceName: 'Payment Processing',
-    customerId: 'cust-3',
-    customerName: 'Carol White',
-    customerPhone: '555-1003',
-    status: 'waiting',
-    positionInQueue: 1,
-    createdAt: new Date(Date.now() - 8 * 60000).toISOString(),
-    estimatedWaitTime: 10,
-  },
-  {
-    id: 'ticket-4',
-    ticketNumber: 'A004',
-    branchId: 'branch-1',
-    serviceId: 'service-1',
-    serviceName: 'General Consultation',
-    customerId: 'cust-4',
-    customerName: 'David Brown',
-    customerPhone: '555-1004',
-    status: 'waiting',
-    positionInQueue: 3,
-    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
-    estimatedWaitTime: 25,
-  },
-  {
-    id: 'ticket-5',
-    ticketNumber: 'A005',
-    branchId: 'branch-1',
-    serviceId: 'service-3',
-    serviceName: 'Document Processing',
-    customerId: 'cust-5',
-    customerName: 'Emma Davis',
-    customerPhone: '555-1005',
-    status: 'waiting',
-    positionInQueue: 1,
-    createdAt: new Date(Date.now() - 3 * 60000).toISOString(),
-    estimatedWaitTime: 20,
-  },
-]
+// No seed tickets — queue is filled from kiosk / mobile booking during the demo.
+export const mockTickets: Ticket[] = []
 
 // Mock Devices
 export const mockDevices: Device[] = [
@@ -276,8 +204,7 @@ export const mockOperators: Operator[] = [
     name: 'John Operator',
     email: 'john@institution.com',
     branchId: 'branch-1',
-    status: 'serving',
-    currentTicketId: 'ticket-1',
+    status: 'idle',
     shiftsCompleted: 45,
     customersServed: 342,
     createdAt: new Date('2024-01-05').toISOString(),
@@ -327,12 +254,15 @@ export const getInMemoryData = () => InMemoryQueueStore.getInstance().getData()
 
 export const updateInMemoryTickets = (tickets: Ticket[]) => {
   InMemoryQueueStore.getInstance().setTickets(tickets)
+  pushQueueSnapshotAfterLocalMutation()
 }
 
 export const updateInMemoryOperators = (operators: Operator[]) => {
   InMemoryQueueStore.getInstance().setOperators(operators)
+  pushQueueSnapshotAfterLocalMutation()
 }
 
 export const resetInMemoryData = () => {
   InMemoryQueueStore.getInstance().reset(mockTickets, mockOperators)
+  pushQueueSnapshotAfterLocalMutation()
 }

@@ -55,6 +55,8 @@ export interface Ticket {
   customerId: string
   customerName: string
   customerPhone?: string
+  /** Set for mobile bookings so customers can look up their tickets by email. */
+  customerEmail?: string
   status: TicketStatus
   positionInQueue: number
   calledBy?: string

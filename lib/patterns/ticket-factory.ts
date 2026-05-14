@@ -5,6 +5,7 @@ export type CreateWaitingTicketInput = {
   service: Service
   customerName: string
   customerPhone?: string
+  customerEmail?: string
   /** Waiting tickets for this branch + service (for position and ETA). */
   waitingSameService: Ticket[]
   /** All tickets in memory (for numbering). */
@@ -16,7 +17,7 @@ export type CreateWaitingTicketInput = {
  */
 export class TicketFactory {
   static createWaitingTicket(input: CreateWaitingTicketInput): Ticket {
-    const { branchId, service, customerName, customerPhone, waitingSameService, allTickets } = input
+    const { branchId, service, customerName, customerPhone, customerEmail, waitingSameService, allTickets } = input
     const ticketNumber = TicketFactory.generateTicketNumber(branchId, allTickets)
     const positionInQueue = waitingSameService.length + 1
     const estimatedWaitTime = waitingSameService.length * service.averageTimeMinutes
@@ -30,6 +31,7 @@ export class TicketFactory {
       customerId: `cust-${Date.now()}`,
       customerName,
       customerPhone,
+      customerEmail,
       status: 'waiting',
       positionInQueue,
       createdAt: new Date().toISOString(),

@@ -140,7 +140,8 @@ export async function createTicket(
   branchId: string,
   serviceId: string,
   customerName: string,
-  customerPhone?: string
+  customerPhone?: string,
+  customerEmail?: string
 ): Promise<ApiResponse<Ticket>> {
   await delay()
   const service = mockServices.find((s) => s.id === serviceId)
@@ -154,6 +155,7 @@ export async function createTicket(
     service,
     customerName,
     customerPhone,
+    customerEmail,
     waitingSameService: waitingTickets,
     allTickets: tickets,
   })

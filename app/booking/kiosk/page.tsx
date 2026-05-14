@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ export default function TicketBookingKiosk() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [error, setError] = useState('')
   const [createdTicket, setCreatedTicket] = useState<Ticket | null>(null)
+  const [autoResetSeconds, setAutoResetSeconds] = useState(30)
 
   useEffect(() => {
     loadInitialData()
@@ -80,10 +81,8 @@ export default function TicketBookingKiosk() {
     }
 
     try {
-      await createNewTicket(currentBranchId, selectedServiceId, customerName, customerPhone)
-      
-      // Get the created ticket from queue
-      const tickets = await getServices(currentBranchId)
+      const ticket = await createNewTicket(currentBranchId, selectedServiceId, customerName, customerPhone)
+      setCreatedTicket(ticket)
       setStep('confirmation')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create ticket')
@@ -94,14 +93,30 @@ export default function TicketBookingKiosk() {
     window.print()
   }
 
-  const handleNewTicket = () => {
+  const handleNewTicket = useCallback(() => {
     setStep('branch')
     setSelectedServiceId('')
     setCustomerName('')
     setCustomerPhone('')
     setError('')
     setCreatedTicket(null)
-  }
+    setAutoResetSeconds(30)
+  }, [])
+
+  useEffect(() => {
+    if (step !== 'confirmation') return
+    setAutoResetSeconds(30)
+    let remaining = 30
+    const id = window.setInterval(() => {
+      remaining -= 1
+      setAutoResetSeconds(remaining)
+      if (remaining <= 0) {
+        window.clearInterval(id)
+        handleNewTicket()
+      }
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [step, handleNewTicket])
 
   const handleBackToHome = () => {
     router.push('/admin')
@@ -262,11 +277,13 @@ export default function TicketBookingKiosk() {
               {/* Ticket Display */}
               <div className="border-4 border-dashed border-blue-300 p-6 rounded-lg bg-blue-50 text-center">
                 <p className="text-sm text-gray-600 mb-2">Your Ticket Number</p>
-                <p className="text-6xl font-bold text-blue-600 mb-4">A001</p>
+                <p className="text-6xl font-bold text-blue-600 mb-4" data-testid="kiosk-ticket-number">
+                  {createdTicket?.ticketNumber ?? '—'}
+                </p>
                 <div className="bg-white p-4 rounded">
                   <p className="text-sm">
                     <span className="font-medium">Service:</span>{' '}
-                    {services.find((s) => s.id === selectedServiceId)?.name}
+                    {createdTicket?.serviceName ?? services.find((s) => s.id === selectedServiceId)?.name}
                   </p>
                   <p className="text-sm">
                     <span className="font-medium">Name:</span> {customerName}
@@ -276,7 +293,16 @@ export default function TicketBookingKiosk() {
 
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <p className="text-sm text-orange-800">
-                  <span className="font-medium">Estimated Wait Time:</span> 15-20 minutes
+                  <span className="font-medium">Estimated Wait Time:</span>{' '}
+                  {createdTicket?.estimatedWaitTime != null
+                    ? `~${createdTicket.estimatedWaitTime} minutes`
+                    : '15–20 minutes'}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-blue-100 border border-blue-200 px-4 py-3 text-center">
+                <p className="text-sm font-medium text-blue-900">
+                  Returning to branch selection in <span className="tabular-nums font-bold">{autoResetSeconds}</span>s
                 </p>
               </div>
 
@@ -295,7 +321,7 @@ export default function TicketBookingKiosk() {
                   Print Ticket
                 </Button>
                 <Button onClick={handleNewTicket} variant="outline" className="flex-1">
-                  Next Customer
+                  Start now
                 </Button>
               </div>
 

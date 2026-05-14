@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { Ticket, Operator, BranchQueue } from '@/lib/types'
 import {
   getTickets,
@@ -13,6 +13,7 @@ import {
   completeTicket,
   skipTicket,
 } from '@/lib/db/api'
+import { initQueueTabSyncFromStorage, subscribeQueueTabSync } from '@/lib/db/tab-queue-sync'
 
 interface QueueContextType {
   // Data
@@ -28,7 +29,13 @@ interface QueueContextType {
 
   // Queue operations
   refreshQueue: () => Promise<void>
-  createNewTicket: (branchId: string, serviceId: string, customerName: string, customerPhone?: string) => Promise<void>
+  createNewTicket: (
+    branchId: string,
+    serviceId: string,
+    customerName: string,
+    customerPhone?: string,
+    customerEmail?: string
+  ) => Promise<Ticket>
   callNext: (operatorId: string, serviceId?: string) => Promise<void>
   completeCustomer: (ticketId: string, operatorId: string) => Promise<void>
   skipCustomer: (ticketId: string, operatorId: string) => Promise<void>
@@ -44,14 +51,6 @@ export function QueueProvider({ children }: { children: React.ReactNode }) {
   const [queueData, setQueueData] = useState<BranchQueue | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-
-  // Initial load
-  useEffect(() => {
-    refreshQueue()
-    // Set up auto-refresh every 2 seconds
-    const interval = setInterval(refreshQueue, 2000)
-    return () => clearInterval(interval)
-  }, [currentBranchId])
 
   const refreshQueue = useCallback(async () => {
     setIsRefreshing(true)
@@ -78,15 +77,42 @@ export function QueueProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentBranchId])
 
-  const createNewTicket = useCallback(async (branchId: string, serviceId: string, customerName: string, customerPhone?: string) => {
+  const refreshRef = useRef(refreshQueue)
+  refreshRef.current = refreshQueue
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    initQueueTabSyncFromStorage()
+    return subscribeQueueTabSync(() => {
+      refreshRef.current()
+    })
+  }, [])
+
+  // Initial load + polling fallback (cross-tab updates apply immediately via tab sync)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      initQueueTabSyncFromStorage()
+    }
+    refreshQueue()
+    const interval = setInterval(refreshQueue, 2000)
+    return () => clearInterval(interval)
+  }, [currentBranchId, refreshQueue])
+
+  const createNewTicket = useCallback(async (
+    branchId: string,
+    serviceId: string,
+    customerName: string,
+    customerPhone?: string,
+    customerEmail?: string
+  ) => {
     setIsLoading(true)
     try {
-      const result = await createTicket(branchId, serviceId, customerName, customerPhone)
-      if (result.success) {
+      const result = await createTicket(branchId, serviceId, customerName, customerPhone, customerEmail)
+      if (result.success && result.data) {
         await refreshQueue()
-      } else {
-        throw new Error(result.error || 'Failed to create ticket')
+        return result.data
       }
+      throw new Error(result.error || 'Failed to create ticket')
     } finally {
       setIsLoading(false)
     }

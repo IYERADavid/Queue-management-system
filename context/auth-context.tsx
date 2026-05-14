@@ -15,20 +15,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+function readStoredUser(): User | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem('qms-user')
+    return raw ? (JSON.parse(raw) as User) : null
+  } catch {
+    return null
+  }
+}
+
+function readStoredToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('qms-token')
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Initialize from localStorage on mount
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem('qms-user')
-      const storedToken = localStorage.getItem('qms-token')
-      if (storedUser && storedToken) {
-        setUser(JSON.parse(storedUser))
-        setToken(storedToken)
-      }
+      const u = readStoredUser()
+      const t = readStoredToken()
+      if (u) setUser(u)
+      if (t) setToken(t)
     } catch (error) {
       console.error('Failed to restore auth state:', error)
     } finally {

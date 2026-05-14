@@ -83,6 +83,32 @@ This is a production-ready Next.js 15 application that provides an integrated so
 4. **Open your browser**:
    Navigate to `http://localhost:3000`
 
+## Automated acceptance tests
+
+The documented TC-* cases are automated in `e2e/documented-flows.spec.ts`. Run the full suite from the project root:
+
+```bash
+npm install
+npm run test:e2e
+```
+
+You get a single-worker run with one line per case and a final pass summary (same case order as the table below).
+
+That starts the app on port **3000** by default (`PLAYWRIGHT_PORT`), builds with `npm run build`, and serves the **standalone** output (`node server.js` under `.next/standalone/`).
+
+## Documented manual test cases
+
+| ID | Preconditions | Steps | Expected result |
+|----|---------------|-------|-----------------|
+| TC-AUTH-01 | None | Open `/login`, enter `admin@institution.com` / `admin123`, submit. | Redirect to `/admin`; sidebar visible. |
+| TC-AUTH-02 | None | Open `/login`, enter `john@institution.com` / `operator123`, submit. | Redirect to `/operator/dashboard`. |
+| TC-AUTH-03 | None | Open `/login`, wrong password. | Error message; stay on login. |
+| TC-BOOK-01 | None | `/booking/kiosk` → pick branch → service → enter name → confirm. | Ticket number shown; display/kiosk can show new waiting ticket after refresh cycle. |
+| TC-OP-01 | Logged in as operator at branch with waiting tickets | Open `/operator/dashboard`, click call next (if exposed), then complete. | Ticket moves from waiting to completed; operator returns idle in UI. |
+| TC-DISP-01 | None | Open `/display/queue`, wait ~2s. | “Last update” or list refreshes without full page reload errors. |
+| TC-ADM-01 | Logged in as admin | `/admin/branches` → add a branch with valid fields. | New branch appears in list. |
+| TC-MOB-01 | None | `/mobile/book` complete wizard. | Confirmation step with ticket reference. |
+
 ## Demo Credentials
 
 ### Administrator
