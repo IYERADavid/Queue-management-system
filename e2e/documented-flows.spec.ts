@@ -5,12 +5,11 @@ import { test, expect } from '@playwright/test'
  */
 test.describe.configure({ mode: 'serial' })
 
-/** Login uses `window.location.assign` after success so the next page loads with session from localStorage. */
 async function login(page: import('@playwright/test').Page, email: string, password: string, expectUrl: RegExp) {
   await page.goto('/login')
-  await page.getByTestId('login-email').fill(email)
-  await page.getByTestId('login-password').fill(password)
-  await page.getByTestId('login-submit').click()
+  await page.getByPlaceholder('your@email.com').fill(email)
+  await page.locator('input[type="password"]').fill(password)
+  await page.getByRole('button', { name: /^sign in$/i }).click()
   await expect(page).toHaveURL(expectUrl, { timeout: 25_000 })
 }
 
@@ -26,9 +25,9 @@ test('TC-AUTH-02 operator login redirects to operator dashboard', async ({ page 
 
 test('TC-AUTH-03 wrong password shows error and stays on login', async ({ page }) => {
   await page.goto('/login')
-  await page.getByTestId('login-email').fill('admin@institution.com')
-  await page.getByTestId('login-password').fill('not-the-password')
-  await page.getByTestId('login-submit').click()
+  await page.getByPlaceholder('your@email.com').fill('admin@institution.com')
+  await page.locator('input[type="password"]').fill('not-the-password')
+  await page.getByRole('button', { name: /^sign in$/i }).click()
   await expect(page.getByText(/invalid credentials/i)).toBeVisible()
   await expect(page).toHaveURL(/\/login/)
 })

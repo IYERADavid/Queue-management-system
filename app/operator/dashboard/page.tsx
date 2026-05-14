@@ -12,7 +12,7 @@ import { CheckCircle2, SkipForward, LogOut, Phone } from 'lucide-react'
 
 export default function OperatorDashboard() {
   const router = useRouter()
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading: authLoading } = useAuth()
   const {
     currentBranchId,
     tickets,
@@ -44,12 +44,13 @@ export default function OperatorDashboard() {
   }, [user?.operatorId, setCurrentBranchId])
 
   useEffect(() => {
+    if (authLoading) return
     if (!user || user.role !== 'operator' || !user.operatorId) {
       router.push('/login')
       return
     }
     loadOperatorData()
-  }, [user, router, loadOperatorData])
+  }, [user, router, loadOperatorData, authLoading])
 
   const branchTickets = tickets.filter((t) => t.branchId === currentBranchId)
   const waitingList = branchTickets.filter((t) => t.status === 'waiting')
@@ -116,6 +117,17 @@ export default function OperatorDashboard() {
 
   const displayStatus: Operator['status'] =
     operator?.status === 'serving' && !currentTicket ? 'idle' : (operator?.status ?? 'idle')
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4" />
+          <p className="text-gray-600">Loading…</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

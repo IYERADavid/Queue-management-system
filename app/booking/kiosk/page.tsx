@@ -321,19 +321,9 @@ export default function TicketBookingKiosk() {
                   Print Ticket
                 </Button>
                 <Button onClick={handleNewTicket} variant="outline" className="flex-1">
-                  Start now
+                  Book new ticket
                 </Button>
               </div>
-
-              <Button
-                onClick={handleBackToHome}
-                variant="ghost"
-                className="w-full text-gray-600 hover:text-gray-900"
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </CardContent>
           </Card>
         )}
       </div>

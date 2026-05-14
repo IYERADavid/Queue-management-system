@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ const demoCredentials = [
 ]
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('admin@institution.com')
   const [password, setPassword] = useState('admin123')
   const [error, setError] = useState('')
@@ -30,14 +32,14 @@ export default function LoginPage() {
     try {
       const loggedInUser = await login(email, password)
       if (loggedInUser.role === 'admin') {
-        window.location.assign('/admin')
+        router.push('/admin')
         return
       }
       if (loggedInUser.role === 'operator') {
-        window.location.assign('/operator/dashboard')
+        router.push('/operator/dashboard')
         return
       }
-      window.location.assign('/')
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -78,7 +80,6 @@ export default function LoginPage() {
                   placeholder="your@email.com"
                   disabled={loading}
                   autoComplete="email"
-                  data-testid="login-email"
                 />
               </div>
 
@@ -90,11 +91,10 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={loading}
-                  data-testid="login-password"
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading} data-testid="login-submit">
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
