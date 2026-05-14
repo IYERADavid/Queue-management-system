@@ -324,6 +324,7 @@ export default function TicketBookingKiosk() {
                   Book new ticket
                 </Button>
               </div>
+            </CardContent>
           </Card>
         )}
       </div>
