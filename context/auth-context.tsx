@@ -1,14 +1,14 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { User, UserRole } from '@/lib/types'
+import { User } from '@/lib/types'
 
 interface AuthContextType {
   user: User | null
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
   logout: () => void
   setUser: (user: User | null) => void
 }
@@ -36,11 +36,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true)
     try {
       // Simulate login with mock users
-      const mockUsers: Array<{ email: string; password: string; user: User; role: UserRole }> = [
+      const mockUsers: Array<{ email: string; password: string; user: User }> = [
         {
           email: 'admin@institution.com',
           password: 'admin123',
@@ -51,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'admin',
             createdAt: new Date('2024-01-01').toISOString(),
           },
-          role: 'admin',
         },
         {
           email: 'john@institution.com',
@@ -65,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             operatorId: 'op-1',
             createdAt: new Date('2024-01-05').toISOString(),
           },
-          role: 'operator',
         },
         {
           email: 'sarah@institution.com',
@@ -79,7 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             operatorId: 'op-2',
             createdAt: new Date('2024-01-05').toISOString(),
           },
-          role: 'operator',
         },
         {
           email: 'mike@institution.com',
@@ -93,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             operatorId: 'op-3',
             createdAt: new Date('2024-01-05').toISOString(),
           },
-          role: 'operator',
         },
         {
           email: 'customer@email.com',
@@ -105,7 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'customer',
             createdAt: new Date('2024-01-10').toISOString(),
           },
-          role: 'customer',
         },
       ]
 
@@ -130,6 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Store in localStorage
       localStorage.setItem('qms-user', JSON.stringify(credentials.user))
       localStorage.setItem('qms-token', newToken)
+
+      return credentials.user
     } finally {
       setIsLoading(false)
     }

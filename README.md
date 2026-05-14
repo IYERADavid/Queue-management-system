@@ -340,6 +340,17 @@ This is a demonstration system created for educational purposes.
 
 ---
 
+### Docker (Phase 3)
+
+```bash
+docker build -t queue-management-system .
+docker run -p 3000:3000 queue-management-system
+```
+
+Then open `http://localhost:3000`.
+
+---
+
 **Version**: 1.0.0  
 **Last Updated**: April 2024  
 **Status**: Complete Educational Demo

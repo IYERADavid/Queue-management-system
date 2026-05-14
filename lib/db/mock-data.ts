@@ -7,6 +7,7 @@ import {
   Operator,
   SystemSettings,
 } from '../types'
+import { InMemoryQueueStore } from '@/lib/patterns/in-memory-queue-store'
 
 // Simulate network delay
 const NETWORK_DELAY = Math.random() * 300 + 100 // 100-400ms
@@ -319,24 +320,19 @@ export const mockSystemSettings: SystemSettings = {
   updatedAt: new Date('2024-01-01').toISOString(),
 }
 
-// In-memory storage that persists during session
-let inMemoryTickets = [...mockTickets]
-let inMemoryOperators = [...mockOperators]
+// In-memory storage (Singleton) — see `lib/patterns/in-memory-queue-store.ts`
+InMemoryQueueStore.initializeFromSeeds(mockTickets, mockOperators)
 
-export const getInMemoryData = () => ({
-  tickets: inMemoryTickets,
-  operators: inMemoryOperators,
-})
+export const getInMemoryData = () => InMemoryQueueStore.getInstance().getData()
 
 export const updateInMemoryTickets = (tickets: Ticket[]) => {
-  inMemoryTickets = tickets
+  InMemoryQueueStore.getInstance().setTickets(tickets)
 }
 
 export const updateInMemoryOperators = (operators: Operator[]) => {
-  inMemoryOperators = operators
+  InMemoryQueueStore.getInstance().setOperators(operators)
 }
 
 export const resetInMemoryData = () => {
-  inMemoryTickets = [...mockTickets]
-  inMemoryOperators = [...mockOperators]
+  InMemoryQueueStore.getInstance().reset(mockTickets, mockOperators)
 }

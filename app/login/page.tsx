@@ -11,6 +11,7 @@ import { AlertCircle } from 'lucide-react'
 const demoCredentials = [
   { email: 'admin@institution.com', password: 'admin123', role: 'Admin' },
   { email: 'john@institution.com', password: 'operator123', role: 'Operator (Main Branch)' },
+  { email: 'sarah@institution.com', password: 'operator123', role: 'Operator (Main Branch)' },
   { email: 'mike@institution.com', password: 'operator123', role: 'Operator (East Branch)' },
   { email: 'customer@email.com', password: 'customer123', role: 'Customer' },
 ]
@@ -29,8 +30,14 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(email, password)
-      router.push('/admin')
+      const loggedInUser = await login(email, password)
+      if (loggedInUser.role === 'admin') {
+        router.push('/admin')
+      } else if (loggedInUser.role === 'operator') {
+        router.push('/operator/dashboard')
+      } else {
+        router.push('/')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

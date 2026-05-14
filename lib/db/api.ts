@@ -24,16 +24,27 @@ import {
   updateInMemoryTickets,
   updateInMemoryOperators,
 } from './mock-data'
+import { TicketFactory } from '@/lib/patterns/ticket-factory'
+import { applyTicketStatusStrategy } from '@/lib/patterns/ticket-status-strategies'
 
 // ============================================================================
 // AUTH ENDPOINTS
 // ============================================================================
 
+/** Demo passwords aligned with `context/auth-context.tsx` (simulated backend check). */
+const DEMO_PASSWORDS: Record<string, string> = {
+  'admin@institution.com': 'admin123',
+  'john@institution.com': 'operator123',
+  'sarah@institution.com': 'operator123',
+  'mike@institution.com': 'operator123',
+  'customer@email.com': 'customer123',
+}
+
 export async function loginUser(email: string, password: string): Promise<ApiResponse<{ user: User; token: string }>> {
   await delay()
   const user = mockUsers.find((u) => u.email === email)
-  if (!user) {
-    return { success: false, error: 'User not found' }
+  if (!user || DEMO_PASSWORDS[email] !== password) {
+    return { success: false, error: 'Invalid credentials' }
   }
   const token = btoa(JSON.stringify({ userId: user.id, role: user.role, expiresAt: Date.now() + 24 * 60 * 60 * 1000 }))
   return { success: true, data: { user, token } }
@@ -125,13 +136,6 @@ export async function createService(serviceData: Partial<Service>): Promise<ApiR
 // TICKET ENDPOINTS
 // ============================================================================
 
-function generateTicketNumber(branchId: string): string {
-  const ticketsInBranch = getInMemoryData().tickets.filter((t) => t.branchId === branchId)
-  const nextNumber = ticketsInBranch.length + 1
-  const letter = branchId === 'branch-1' ? 'A' : branchId === 'branch-2' ? 'B' : 'C'
-  return `${letter}${String(nextNumber).padStart(3, '0')}`
-}
-
 export async function createTicket(
   branchId: string,
   serviceId: string,
@@ -142,24 +146,17 @@ export async function createTicket(
   const service = mockServices.find((s) => s.id === serviceId)
   if (!service) return { success: false, error: 'Service not found' }
 
-  const ticketNumber = generateTicketNumber(branchId)
   const tickets = getInMemoryData().tickets
   const waitingTickets = tickets.filter((t) => t.branchId === branchId && t.serviceId === serviceId && t.status === 'waiting')
 
-  const newTicket: Ticket = {
-    id: `ticket-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    ticketNumber,
+  const newTicket = TicketFactory.createWaitingTicket({
     branchId,
-    serviceId,
-    serviceName: service.name,
-    customerId: `cust-${Date.now()}`,
+    service,
     customerName,
     customerPhone,
-    status: 'waiting',
-    positionInQueue: waitingTickets.length + 1,
-    createdAt: new Date().toISOString(),
-    estimatedWaitTime: waitingTickets.length * service.averageTimeMinutes,
-  }
+    waitingSameService: waitingTickets,
+    allTickets: tickets,
+  })
 
   tickets.push(newTicket)
   updateInMemoryTickets(tickets)
@@ -187,32 +184,8 @@ export async function updateTicketStatus(id: string, status: TicketStatus, opera
 
   if (!ticket) return { success: false, error: 'Ticket not found' }
 
-  const oldStatus = ticket.status
   ticket.status = status
-
-  if (status === 'called') {
-    ticket.calledAt = new Date().toISOString()
-    ticket.calledBy = operatorId
-  }
-
-  if (status === 'completed' || status === 'skipped') {
-    ticket.completedAt = new Date().toISOString()
-    ticket.servedBy = operatorId
-
-    // Recalculate queue positions
-    const sameServiceTickets = tickets.filter(
-      (t) => t.branchId === ticket.branchId && t.serviceId === ticket.serviceId && t.status === 'waiting'
-    )
-
-    sameServiceTickets.forEach((t, index) => {
-      t.positionInQueue = index + 1
-    })
-  }
-
-  if (status === 'calling' || status === 'serving') {
-    ticket.calledBy = operatorId
-    ticket.calledAt = new Date().toISOString()
-  }
+  applyTicketStatusStrategy(ticket, status, { allTickets: tickets, operatorId })
 
   updateInMemoryTickets(tickets)
   return { success: true, data: ticket }
@@ -377,6 +350,6 @@ export async function getSystemSettings(): Promise<ApiResponse<SystemSettings>> 
 
 export async function updateSystemSettings(settings: Partial<SystemSettings>): Promise<ApiResponse<SystemSettings>> {
   await delay()
-  const updated = { ...mockSystemSettings, ...settings, updatedAt: new Date().toISOString() }
-  return { success: true, data: updated }
+  Object.assign(mockSystemSettings, settings, { updatedAt: new Date().toISOString() })
+  return { success: true, data: { ...mockSystemSettings } }
 }
